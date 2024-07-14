@@ -13,6 +13,7 @@ struct sClient {
     string Phone;
     double AccountBalance;
     bool markForDelete = false;
+    bool markToEdit = false;
 };
 void Application (vector<sClient> & vClients);
 vector<string> SplitString(string S1, string Delim) {
@@ -64,7 +65,12 @@ short ReadChoice() {
     }while(number >= 7 || number <= 0);
     return number;
 }
-
+string readAccountNumber() {
+    string s;
+    cout << "Enter Account Number : ";
+    cin >>s;
+    return s;
+}
 void showMainMenu() {
     cout << "===================================================\n";
     cout << left<<setw(17)<<"Main Menu Screen\n";
@@ -77,6 +83,13 @@ void showMainMenu() {
     cout<< left <<setw(10)<<"[6] Exit.\n";
 
 }
+void MarkClientForDelete(string accountNumber, vector<sClient>& vClients) {
+    for (sClient& client : vClients) {
+        if (client.AccountNumber == accountNumber) {
+            client.markForDelete = true;
+        }
+    }
+}
 void PrintClientRecord(sClient Client) {
     cout << "| " << setw(15) << left << Client.AccountNumber;
     cout << "| " << setw(10) << left << Client.PinCode;
@@ -85,6 +98,15 @@ void PrintClientRecord(sClient Client) {
     cout << "| " << setw(12) << left << Client.AccountBalance;
 
 }
+void PrintClientCard(sClient Client) {
+    cout << "\nThe following are the client details:\n";
+    cout << "\nAccout Number: " << Client.AccountNumber;
+    cout << "\nPin Code     : " << Client.PinCode;
+    cout << "\nName         : " << Client.Name;
+    cout << "\nPhone        : " << Client.Phone;
+    cout << "\nAccount Balance: " << Client.AccountBalance << endl;
+}
+
 void PrintAllClientsData(vector <sClient> vClients) {
     cout << "\n\t\t\t\t\tClient List (" << vClients.size() << ") Client(s).";
     cout << "\n_______________________________________________________";
@@ -125,10 +147,10 @@ void saveStringDataToFileAndClear(string fileName,string String) {
         File.close();
     }
 }
-bool findClient(vector <sClient> vClients,string accountNumber) {
+bool findClient(vector <sClient> &vClients,string accountNumber) {
     for(sClient & client : vClients) {
         if(client.AccountNumber == accountNumber) {
-            PrintClientRecord(client);
+            PrintClientCard(client);
             return true;
         }
     }
@@ -139,14 +161,12 @@ void saveVectorToFile(vector<sClient> clients) {
         saveStringDataToFileAndClear(ClientsFileName,convertRecordToline(client,sep));
     }
 }
-
 void appendClientToFile(sClient client,string fileName) {
     fstream File;
     string String = convertRecordToline(client,sep);
     File.open(fileName,ios::out|ios::app);
     if(File.is_open()) {
-        File<<String;
-        File<<endl;
+        File<<String<<endl;
     }
 }
 sClient ReaddNewClient(vector<sClient> vclients) {
@@ -170,14 +190,12 @@ sClient ReaddNewClient(vector<sClient> vclients) {
     cin>> data.AccountBalance;
     return data;
 }
-
 sClient addNewClientsToVectorandReturnIt(vector<sClient> &vclients) {
     sClient client;
     client = ReaddNewClient(vclients);
     vclients.push_back(client);
     return client;
 }
-
 void addNewClients(vector<sClient>& vClients) {
     sClient client;
     char ask = 'y';
@@ -187,6 +205,44 @@ void addNewClients(vector<sClient>& vClients) {
         cout << "Client added successfuly , do you want to add more Y/N? ";
         cin >> ask;
     }while(tolower(ask) == 'y');
+}
+vector<sClient> editVectorToDeleteNumber(vector<sClient> vClients) {
+    vector<sClient> newVector;
+    for(sClient &client :vClients) {
+        if(!client.markForDelete)
+        newVector.push_back(client);
+    }
+    return newVector;
+}
+void appendAllVectorToFile(vector<sClient> &vClients,string fileName) {
+    fstream MyFile;
+    string String = "";
+    MyFile.open(fileName,ios::out);
+    if(MyFile.is_open()) {
+        for(sClient & client:vClients) {
+            String = convertRecordToline(client,sep);
+            MyFile << String<<endl;
+        }
+    }
+    MyFile.close();
+}
+void DeleteClient(vector<sClient>& vClients) {
+    char answer = 'n';
+    string AccountNumber = readAccountNumber();
+    if(findClient(vClients,AccountNumber)) {
+        cout << "Are you sure you want to delete this Client (y/n)? ";
+        cin >> answer;
+        if(answer == 'y'|| answer == 'Y') {
+            MarkClientForDelete(AccountNumber,vClients);
+            vClients = editVectorToDeleteNumber(vClients);
+            appendAllVectorToFile(vClients,ClientsFileName);
+            cout << "Account Deleted successfuly";
+        }
+    }else {
+        cout << "Number Not Found";
+
+    }
+
 }
 
 void caseSelected(vector<sClient>& vClients,int choice) {
@@ -203,14 +259,15 @@ void caseSelected(vector<sClient>& vClients,int choice) {
             Application(vClients);
             break;
         case 3:
+            DeleteClient(vClients);
+            backtoMainMenu();
+            Application(vClients);
             break;
         case 4:
             break;
         case 5:
             break;
         case 6:
-            break;
-        default:
             break;
     }
 }
