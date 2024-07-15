@@ -16,6 +16,7 @@ struct sClient {
     bool markToEdit = false;
 };
 void Application (vector<sClient> & vClients);
+void extention(vector<sClient> & vClients);
 vector<string> SplitString(string S1, string Delim) {
     vector<string> vString;
     short pos = 0;
@@ -32,7 +33,6 @@ vector<string> SplitString(string S1, string Delim) {
     }
     return vString;
 }
-
 sClient ConvertLinetoRecord(string Line, string Seperator = "#//#") {
     sClient Client;
     vector<string> vClientData = SplitString(Line, Seperator);
@@ -60,9 +60,17 @@ vector<sClient> LoadCleintsDataFromFile(string FileName) {
 short ReadChoice() {
     short number = 0;
     do {
-        cout << "Choose What do you Want ?[1-6] \n";
+        cout << "Choose What do you Want ?[1-7] \n";
         cin >> number;
-    }while(number >= 7 || number <= 0);
+    }while(number >= 8 || number <= 0);
+    return number;
+}
+short ReadChoicetrans() {
+    short number = 0;
+    do {
+        cout << "Choose What do you Want ?[1-4] \n";
+        cin >> number;
+    }while(number >= 5 || number <= 0);
     return number;
 }
 string readAccountNumber() {
@@ -80,7 +88,8 @@ void showMainMenu() {
     cout<< left <<setw(10)<<"[3] Delete Client.\n";
     cout<< left <<setw(10)<<"[4] Update Client Info.\n";
     cout<< left <<setw(10)<<"[5] Find Client.\n";
-    cout<< left <<setw(10)<<"[6] Exit.\n";
+    cout<< left <<setw(10)<<"[6] Transctions.\n";
+    cout<< left <<setw(10)<<"[7] Exit.\n";
 
 }
 void MarkClientForDelete(string accountNumber, vector<sClient>& vClients) {
@@ -95,6 +104,12 @@ void PrintClientRecord(sClient Client) {
     cout << "| " << setw(10) << left << Client.PinCode;
     cout << "| " << setw(40) << left << Client.Name;
     cout << "| " << setw(12) << left << Client.Phone;
+    cout << "| " << setw(12) << left << Client.AccountBalance;
+
+}
+void PrintClientRecordBalance(sClient Client) {
+    cout << "| " << setw(15) << left << Client.AccountNumber;
+    cout << "| " << setw(40) << left << Client.Name;
     cout << "| " << setw(12) << left << Client.AccountBalance;
 
 }
@@ -117,11 +132,29 @@ void PrintAllClientsData(vector <sClient> vClients) {
     cout << "| " << left << setw(12) << "Balance";
     cout << "\n_______________________________________________________";
     cout << "_________________________________________\n" << endl;
-    for (sClient Client : vClients) {
+    for (sClient& Client : vClients) {
         PrintClientRecord(Client);
         cout << endl;
     }     cout << "\n_______________________________________________________";
     cout << "_________________________________________\n" << endl;
+}
+void PrintBalance(vector <sClient> vClients) {
+    double totalBalance = 0;
+    cout << "\n\t\t\t\t\tClient List (" << vClients.size() << ") Client(s).";
+    cout << "\n_______________________________________________________";
+    cout << "_________________________________________\n" << endl;
+    cout << "| " << left << setw(15) << "Accout Number";
+    cout << "| " << left << setw(40) << "Client Name";
+    cout << "| " << left << setw(12) << "Balance";
+    cout << "\n_______________________________________________________";
+    cout << "_________________________________________\n" << endl;
+    for (sClient& Client : vClients) {
+        PrintClientRecordBalance(Client);
+        totalBalance += Client.AccountBalance;
+        cout << endl;
+    }     cout << "\n_______________________________________________________";
+    cout << "_________________________________________\n" << endl;
+    cout <<left<<setw(25)<< "\n\nTotal balance : "<<totalBalance;
 }
 void backtoMainMenu() {
     string key;
@@ -175,7 +208,7 @@ sClient ReaddNewClient(vector<sClient> vclients) {
     cout << "Account number : ";
     getline(cin>>ws,data.AccountNumber);
     while(findClient(vclients,data.AccountNumber,false)) {
-        cout << "\n\nThis number is take please reWrite new Account number";
+        cout << "\n\nThis number is take please reWrite new Account number: ";
         getline(cin>>ws,data.AccountNumber);
     }
     cout << "Pin code : ";
@@ -300,6 +333,93 @@ void ExitScreen() {
     cout <<left<<setw(5)<<"Program End!\n";
     cout <<"===========================\n";
 }
+void transCtionMenuScreen() {
+    cout << "===================================================\n";
+    cout << left<<setw(17)<<"Transction Menu Screen\n";
+    cout << "===================================================\n\n";
+    cout<< left <<setw(10)<<"[1] Deposit.\n";
+    cout<< left <<setw(10)<<"[2] Withdraw.\n";
+    cout<< left <<setw(10)<<"[3] Total Balances.\n";
+    cout<< left <<setw(10)<<"[4] Update Client Info.\n";
+}
+int ReadPositiveNumber(string msg) {
+    int number;
+    do {
+        cout <<msg<<endl;
+        cin >> number;
+    }while (number < 0);
+    return number;
+}
+void addNumberToBalance(vector<sClient>& vClients,string accNumb,int deposit) {
+    for(sClient &client:vClients) {
+        if(accNumb == client.AccountNumber) {
+            client.AccountBalance += (double)deposit;
+        }
+    }
+    cout << "Deposit added succesfuly";
+}
+void RemoveNumberToBalance(vector<sClient>& vClients,string accNumb,int withdraw) {
+
+    for(sClient &client:vClients) {
+        if(accNumb == client.AccountNumber) {
+            while(withdraw > client.AccountBalance) {
+                withdraw= ReadPositiveNumber("Withdraw is bigger than the balance or you enterd negative number {Error}: ");
+            }
+            client.AccountBalance -= (double)withdraw;
+        }
+    }
+    cout << "\nWithdraw done succesfuly \n";
+}
+void DepositProcess(vector<sClient>& vClients) {
+    string accountNumber = readAccountNumber();
+    int deposit;
+    while(!findClient(vClients,accountNumber)) {
+        cout << "\nwrong account number please try again\n";
+        cin >> accountNumber;
+    }
+    deposit = ReadPositiveNumber("Please Enter deposit Number : ");
+    addNumberToBalance(vClients,accountNumber,deposit);
+    appendAllVectorToFile(vClients,ClientsFileName);
+}
+void withDrawProccess(vector<sClient>& vClients) {
+    string accountNumber = readAccountNumber();
+    int withdraw;
+    while(!findClient(vClients,accountNumber)) {
+        cout << "\nwrong account number please try again\n";
+        cin >> accountNumber;
+    }
+    withdraw = ReadPositiveNumber("Please Enter withdraw Number : ");
+    RemoveNumberToBalance(vClients,accountNumber,withdraw);
+    appendAllVectorToFile(vClients,ClientsFileName);
+}
+void caseSelectedTrans(vector<sClient> vclients,int choose) {
+    switch (choose) {
+        case 1:
+            DepositProcess(vclients);
+            backtoMainMenu();
+            extention(vclients);
+            break;
+        case 2:
+            withDrawProccess(vclients);
+            backtoMainMenu();
+            extention(vclients);
+            break;
+        case 3:
+            PrintBalance(vclients);
+            backtoMainMenu();
+            extention(vclients);
+            break;
+        case 4:
+            Application(vclients);
+        break;
+
+    }
+}
+void extention(vector<sClient> & vClients) {
+    transCtionMenuScreen();
+    short choice = ReadChoicetrans();
+    caseSelectedTrans(vClients,choice);
+}
 void caseSelected(vector<sClient>& vClients,int choice) {
     switch (choice) {
         case 1:
@@ -328,9 +448,9 @@ void caseSelected(vector<sClient>& vClients,int choice) {
             Application(vClients);
             break;
         case 6:
-            ExitScreen();
+            extention(vClients);
             break;
-        default:
+        case 7:
             ExitScreen();
         break;
     }
